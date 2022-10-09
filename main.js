@@ -7,9 +7,9 @@ const G = {
 	WIDTH: 100,
 	HEIGHT: 150,
   BOXHEIGHT : 40,
-  BOXWIDTH : 25
-  
-
+  BOXWIDTH : 25,
+  ENEMY_MIN_BASE_SPEED: 0.1,
+  ENEMY_MAX_BASE_SPEED: 0.2
 };
 let gunHeight = (G.HEIGHT - G.BOXHEIGHT/2) - 23
 // http://localhost:4000/?PlanetGrapple
@@ -39,7 +39,15 @@ l    l
 l    l
 llllll 
 `
-
+,
+`
+cccccc
+cccccc
+cccccc
+cccccc
+  cc
+  cc
+`
 
 
 
@@ -62,15 +70,34 @@ let bullet = {
  angle : 270
 };
 
+/**
+ * @typedef {{
+ * pos: Vector
+ * }} Enemy
+ */
+
+/**
+ * @type { Enemy [] }
+ */
+let enemies = [];
+
+/**
+ * @type { number }
+ */
+ let currentEnemySpeed;
+
+let gameOver = false;
 
 function update() {
   // The init function running at startup
-if (!ticks) {
-  bulletReset();
-
+  if (!ticks) {
+    bulletReset();
+    enemies = [];
   }
-    buildingUpdate();
-    fireUpdate();
+  buildingUpdate();
+  fireUpdate();
+  enemiesUpdate();
+
 }
 
 function buildingUpdate()
@@ -116,6 +143,41 @@ function fireUpdate()
   }
 }
 
+function enemiesUpdate()
+{
+  if (enemies.length === 0) {
+    currentEnemySpeed =
+        rnd(G.ENEMY_MIN_BASE_SPEED, G.ENEMY_MAX_BASE_SPEED) * difficulty;
+    for (let i = 0; i < 3; i++) {
+      const posX = rnd(0, G.WIDTH);
+      const posY = -rnd(i * G.HEIGHT * 0.1);
+      enemies.push({ pos: vec(posX, posY) })
+    }
+  }
+
+  remove(enemies, (e) => {
+    e.pos.y += currentEnemySpeed;
+    const isCollidingWithBullets = char("d", e.pos).isColliding.char.b;
+    const isCollidingWithTower = char("d", e.pos).isColliding.rect.red;
+    color("red");
+    char("d", e.pos);
+
+    if (isCollidingWithBullets) {
+      color("yellow");
+      particle(e.pos);
+      bulletReset();
+    }
+
+    if (isCollidingWithTower) {
+      end();
+    }
+
+  
+    return (isCollidingWithBullets || e.pos.y > G.HEIGHT);
+  });
+
+}
+
 function bulletReset()
 {
   bullet.pos.x = G.WIDTH/2;
@@ -134,8 +196,5 @@ function bulletActive()
   }
   return false;
 }
-
-
-
 
 addEventListener("load", onLoad);
