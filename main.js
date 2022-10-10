@@ -8,12 +8,11 @@ const G = {
 	HEIGHT: 150,
   BOXHEIGHT : 40,
   BOXWIDTH : 25,
-  ENEMY_MIN_BASE_SPEED: 0.1,
-  ENEMY_MAX_BASE_SPEED: 0.2,
+  ENEMY_MIN_BASE_SPEED: 0.6,
+  ENEMY_MAX_BASE_SPEED: 1.0,
   SPAWNARC : 50
 };
 
-let speedMultiplier = 1
 let gunHeight = (G.HEIGHT - G.BOXHEIGHT/2) - 23
 // http://localhost:4000/?PlanetGrapple
 
@@ -46,7 +45,7 @@ llllll
 `
 cccccc
 cccccc
-cccccc
+ccccccc
 cccccc
   cc
   cc
@@ -102,8 +101,9 @@ let enemies = [];
 */
 let stars = [];
 
+let shipCount;
 
-let gameOver = false;
+let currentDifficulty;
 
 function update() {
   // The init function running at startup
@@ -111,6 +111,8 @@ function update() {
     bulletReset();
     starsInit();
     enemies = [];
+    shipCount = 2;
+    currentDifficulty = 1;
   }
   cosmeticUpdate();
 
@@ -144,26 +146,27 @@ function starsInit()
     
     const randX = rnd(0,G.WIDTH);
     const randY = rnd(0,G.HEIGHT);
-    let newStar = {pos : vec(randX,randY)}
     stars.push({pos : vec(randX,randY)})
     
   }
 }
 function buildingUpdate()
 {
+  color("black")
+  arc(G.WIDTH/2,G.HEIGHT/2,G.SPAWNARC)
   //building base
   color('black')
   box(G.WIDTH/2,(G.HEIGHT - G.BOXHEIGHT/2),G.BOXWIDTH,G.BOXHEIGHT)
 
   color('light_blue')
-  box(G.WIDTH/2-7,(G.HEIGHT - G.BOXHEIGHT/2)-10,10,6)
-  box(G.WIDTH/2+6,(G.HEIGHT - G.BOXHEIGHT/2)-10,10,6)
-  box(G.WIDTH/2-7,(G.HEIGHT - G.BOXHEIGHT/2),10,6)
-  box(G.WIDTH/2+6,(G.HEIGHT - G.BOXHEIGHT/2),10,6)
-  box(G.WIDTH/2-7,(G.HEIGHT - G.BOXHEIGHT/2)+10,10,6)
-  box(G.WIDTH/2+6,(G.HEIGHT - G.BOXHEIGHT/2)+10,10,6)
-  box(G.WIDTH/2-7,(G.HEIGHT - G.BOXHEIGHT/2)+20,10,6)
-  box(G.WIDTH/2+6,(G.HEIGHT - G.BOXHEIGHT/2)+20,10,6)
+  box(G.WIDTH/2-7,(G.HEIGHT - G.BOXHEIGHT/2)-15,10,6)
+  box(G.WIDTH/2+6,(G.HEIGHT - G.BOXHEIGHT/2)-15,10,6)
+  box(G.WIDTH/2-7,(G.HEIGHT - G.BOXHEIGHT/2)-5,10,6)
+  box(G.WIDTH/2+6,(G.HEIGHT - G.BOXHEIGHT/2)-5,10,6)
+  box(G.WIDTH/2-7,(G.HEIGHT - G.BOXHEIGHT/2)+5,10,6)
+  box(G.WIDTH/2+6,(G.HEIGHT - G.BOXHEIGHT/2)+5,10,6)
+  box(G.WIDTH/2-7,(G.HEIGHT - G.BOXHEIGHT/2)+15,10,6)
+  box(G.WIDTH/2+6,(G.HEIGHT - G.BOXHEIGHT/2)+15,10,6)
   //building gun
   color('black');
   char('a',G.WIDTH/2,(G.HEIGHT - G.BOXHEIGHT/2) - 23)
@@ -205,12 +208,15 @@ function fireUpdate()
 
 function enemiesUpdate()
 {
-  arc(G.WIDTH/2,G.HEIGHT/2,G.SPAWNARC)
   color('red')
   if (enemies.length === 0) {
     currentEnemySpeed =
         rnd(G.ENEMY_MIN_BASE_SPEED, G.ENEMY_MAX_BASE_SPEED) * difficulty;
-    for (let i = 0; i < 3; i++) {
+    if (difficulty > currentDifficulty + .5) {
+      currentDifficulty = difficulty;
+      shipCount++;
+    }
+    for (let i = 0; i < shipCount; i++) {
       
       const rand = -rnd(0,1)  * Math.PI// rand angle
       
@@ -227,11 +233,11 @@ function enemiesUpdate()
   }
 
   remove(enemies, (e) => {
-    e.pos.y += e.attackAngle.y / 20 * speedMultiplier;
-    e.pos.x += e.attackAngle.x/ 20 * speedMultiplier;
+    e.pos.y += e.attackAngle.y / 20 * currentEnemySpeed;
+    e.pos.x += e.attackAngle.x/ 20 * currentEnemySpeed;
 
     const isCollidingWithBullets = char("d", e.pos).isColliding.char.b;
-    const isCollidingWithTower = char("d", e.pos).isColliding.rect.red;
+    const isCollidingWithTower = char("d", e.pos).isColliding.rect.light_blue;
     color("red");
     char("d", e.pos);
 
@@ -241,6 +247,7 @@ function enemiesUpdate()
       bulletReset();
       play('explosion')
       play('hit')
+      addScore(1000);
     }
 
     if (isCollidingWithTower) {
